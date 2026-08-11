@@ -27,6 +27,15 @@ describe("Creator RPC", () => {
     });
   });
 
+  test("serves the sponsor deal room", async () => {
+    const detailed = { ...snapshot, sponsors: [{ id: "deal-1", name: "Acme", status: "signed" }] };
+    const handler = createRpcHandler({ snapshot: detailed, refresh: async () => detailed });
+    await expect(handler("panel.get", { panelId: "creator.sponsors" })).resolves.toMatchObject({
+      ok: true,
+      result: { content: { kind: "sponsor-deal-room", totals: { active: 1, needsDisclosure: 1 } } },
+    });
+  });
+
   test("serves a project package review room", async () => {
     const detailed = { ...snapshot, projects: [{ id: "video-1", title: "Next", status: "editing", format: "long" as const, package: { titleSelected: true, thumbnailSelected: false } }], sponsors: [{ id: "deal-1", name: "Acme", status: "signed" }] };
     const handler = createRpcHandler({ snapshot: detailed, refresh: async () => detailed });

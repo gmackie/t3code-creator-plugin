@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildAnalyticsDiagnosis, buildCreatorWorkflow, buildIdeaLadderModel, buildNextActions, buildPackageChecklist, buildSurfaceModel, createCreatorClient, normalizeCreatorSnapshot } from "./creator.ts";
+import { buildAnalyticsDiagnosis, buildCreatorWorkflow, buildIdeaLadderModel, buildNextActions, buildPackageChecklist, buildSponsorDealRoomModel, buildSurfaceModel, createCreatorClient, normalizeCreatorSnapshot } from "./creator.ts";
 
 describe("Creator adapter", () => {
   test("normalizes command-center content without inventing metrics", () => {
@@ -62,6 +62,23 @@ describe("Creator adapter", () => {
       expect.objectContaining({ rung: "production", count: 0 }),
       expect.objectContaining({ rung: "publish", count: 0 }),
     ]);
+  });
+
+  test("builds a sponsor deal room with disclosure gates", () => {
+    const snapshot = normalizeCreatorSnapshot({
+      channel: { name: "GMACKO" }, ideas: [], projects: [], publishQueue: [], calendar: [],
+      sponsors: [
+        { id: "deal-1", name: "Acme", status: "signed" },
+        { id: "deal-2", name: "Beta", status: "delivered", disclosure: "Paid partnership" },
+      ],
+    });
+    expect(buildSponsorDealRoomModel(snapshot)).toMatchObject({
+      totals: { active: 2, needsDisclosure: 1 },
+      deals: expect.arrayContaining([
+        expect.objectContaining({ id: "deal-1", needsDisclosure: true, nextAction: "Add disclosure" }),
+        expect.objectContaining({ id: "deal-2", needsDisclosure: false }),
+      ]),
+    });
   });
 
   test("prioritizes a small set of creator next actions with clear destinations", () => {

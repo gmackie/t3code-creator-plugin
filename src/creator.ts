@@ -9,6 +9,8 @@ export type CreatorNextAction = { id: string; title: string; reason: string; pri
 export type CreatorPackageCheck = { id: "title" | "thumbnail" | "hook" | "captions" | "disclosure"; label: string; status: "complete" | "attention" | "not-configured" | "not-applicable"; reason: string; navigationId: string };
 export type CreatorAnalyticsDiagnosis = { kind: "packaging" | "retention" | "reach" | "healthy" | "needs-data"; title: string; reason: string; nextAction: string; navigationId: string };
 export type CreatorIdeaLadderStage = { rung: Exclude<CreatorIdea["rung"], "unknown">; title: string; count: number; items: readonly { id: string; title: string; nextAction: string }[] };
+export type CreatorSponsorDeal = { id: string; name: string; status: string; disclosure?: string; needsDisclosure: boolean; nextAction: string };
+export type CreatorSponsorDealRoom = { totals: { active: number; needsDisclosure: number; delivered: number }; deals: readonly CreatorSponsorDeal[] };
 export type SurfaceCard = { kind: "metric" | "list" | "notice"; id: string; title: string; value?: string; message?: string; items?: readonly { id: string; title: string; detail?: string; status?: "neutral" | "positive" | "warning" | "negative" }[]; status?: "neutral" | "positive" | "warning" | "negative" };
 export type SurfaceModel = { pluginId: string; navigationId: string; title: string; refreshedAt: string; cards: readonly SurfaceCard[] };
 export type CreatorWorkflowState = { readonly projectId?: string; readonly approved?: boolean; readonly published?: boolean; };
@@ -86,6 +88,30 @@ export function buildIdeaLadderModel(snapshot: CreatorSnapshot): readonly Creato
       items: items.slice(0, 8).map((idea) => ({ id: idea.id, title: idea.title, nextAction: stage.nextAction })),
     };
   });
+}
+
+export function buildSponsorDealRoomModel(snapshot: CreatorSnapshot): CreatorSponsorDealRoom {
+  const activeStatuses = ["signed", "in_production", "delivered"];
+  const active = snapshot.sponsors.filter((sponsor) => activeStatuses.includes(sponsor.status));
+  const deals = active.map((sponsor) => {
+    const needsDisclosure = !sponsor.disclosure?.trim();
+    return {
+      id: sponsor.id,
+      name: sponsor.name,
+      status: sponsor.status,
+      ...(sponsor.disclosure ? { disclosure: sponsor.disclosure } : {}),
+      needsDisclosure,
+      nextAction: needsDisclosure ? "Add disclosure" : sponsor.status === "delivered" ? "Verify delivery" : "Track deliverable",
+    };
+  });
+  return {
+    totals: {
+      active: active.length,
+      needsDisclosure: deals.filter((deal) => deal.needsDisclosure).length,
+      delivered: active.filter((sponsor) => sponsor.status === "delivered").length,
+    },
+    deals,
+  };
 }
 
 export function buildSurfaceModel(snapshot: CreatorSnapshot, navigationId = "creator.command-center"): SurfaceModel {
