@@ -16,7 +16,18 @@ describe("Creator adapter", () => {
       publishQueue: [{ id: "video-1", title: "Build log", status: "ready" }],
       analytics: { ctr: null },
       sponsors: [],
+      calendar: [],
     });
+  });
+
+  test("normalizes package readiness, calendar slots, and sponsor disclosure state", () => {
+    const snapshot = normalizeCreatorSnapshot({
+      channel: { name: "GMACKO" }, ideas: [], projects: [{ id: "video-1", title: "Launch", status: "editing", format: "long", package: { titleSelected: true, thumbnailSelected: false, hookReady: true, captionsReady: false } }], publishQueue: [],
+      contentCalendar: [{ id: "slot-1", projectId: "video-1", title: "Launch", platform: "youtube", date: "2026-08-20", status: "planned" }],
+      sponsors: [{ id: "deal-1", name: "Acme", status: "signed" }],
+    });
+    expect(snapshot.projects[0]).toMatchObject({ package: { titleSelected: true, thumbnailSelected: false, hookReady: true, captionsReady: false } });
+    expect(snapshot.calendar).toEqual([{ id: "slot-1", projectId: "video-1", title: "Launch", platform: "youtube", date: "2026-08-20", status: "planned" }]);
   });
 
   test("builds a creator command-center surface", () => {
@@ -30,6 +41,7 @@ describe("Creator adapter", () => {
     expect(surface.cards).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "ideas" }),
       expect.objectContaining({ id: "publish-queue" }),
+      expect.objectContaining({ id: "calendar" }),
     ]));
   });
 
@@ -44,6 +56,11 @@ describe("Creator adapter", () => {
     expect(workflow.currentStage).toBe("review");
     expect(workflow.evidence?.[0]).toMatchObject({ status: "warning" });
     expect(workflow.actions?.[0]?.id).toBe("approve");
+  });
+
+  test("selects a project and reports its package readiness", () => {
+    const workflow = buildCreatorWorkflow(normalizeCreatorSnapshot({ channel: { name: "GMACKO" }, ideas: [], projects: [{ id: "video-1", title: "Launch", status: "editing", format: "long", package: { titleSelected: true, thumbnailSelected: false } }, { id: "video-2", title: "Ready", status: "ready", format: "short", package: { titleSelected: true, thumbnailSelected: true } }], publishQueue: [] }), { projectId: "video-2" });
+    expect(workflow.evidence?.[0]).toMatchObject({ status: "positive", detail: expect.stringContaining("Ready") });
   });
 
   test("loads command-center data through the configured Creator command", async () => {

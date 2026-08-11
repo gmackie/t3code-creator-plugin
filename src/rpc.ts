@@ -15,9 +15,12 @@ export function createRpcHandler(coordinator: {
     if (method === "surface.get") return { ok: true as const, result: buildSurfaceModel(snapshot, payload?.navigationId) };
     if (method === "workflow.get" && payload?.workflowId === "creator.video-readiness") return { ok: true as const, result: buildCreatorWorkflow(snapshot, currentState()) };
     if (method === "panel.get" && payload?.panelId === "creator.command-center") return { ok: true as const, result: { pluginId: "com.t3code.creator", panelId: "creator.command-center", title: "Creator command center", kind: "command-center" as const, refreshedAt: new Date().toISOString(), content: { kind: "command-center" as const, surface: buildSurfaceModel(snapshot) } } };
+    if (method === "panel.get" && payload?.panelId === "creator.publish-queue") return { ok: true as const, result: { pluginId: "com.t3code.creator", panelId: "creator.publish-queue", title: "Publish queue", kind: "publish-queue" as const, refreshedAt: new Date().toISOString(), content: { kind: "publish-queue" as const, items: snapshot.publishQueue } } };
+    if (method === "panel.get" && payload?.panelId === "creator.content-calendar") return { ok: true as const, result: { pluginId: "com.t3code.creator", panelId: "creator.content-calendar", title: "Content calendar", kind: "content-calendar" as const, refreshedAt: new Date().toISOString(), content: { kind: "content-calendar" as const, slots: snapshot.calendar } } };
+    if (method === "panel.get" && payload?.panelId === "creator.analytics") return { ok: true as const, result: { pluginId: "com.t3code.creator", panelId: "creator.analytics", title: "Creator analytics", kind: "analytics" as const, refreshedAt: new Date().toISOString(), content: { kind: "analytics" as const, metrics: snapshot.analytics ?? { ctr: null } } } };
     if (method === "action.execute" && payload?.workflowId === "creator.video-readiness") {
       const existing = currentState();
-      if (payload.actionId === "approve") { await saveState({ ...existing, approved: true }); return { ok: true as const, result: { status: "approved" as const } }; }
+      if (payload.actionId === "approve") { const projectId = ((payload.input ?? {}) as { projectId?: string }).projectId; await saveState({ ...existing, ...(projectId ? { projectId } : {}), approved: true }); return { ok: true as const, result: { status: "approved" as const } }; }
       if (payload.actionId === "publish") {
         if (!existing.approved) return { ok: false as const, error: "Approve the creator package before publishing" };
         if (!coordinator.publish) return { ok: false as const, error: "Creator publish callback is unavailable" };
