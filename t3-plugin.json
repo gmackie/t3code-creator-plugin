@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "com.t3code.creator",
+  "displayName": "Creator command center",
+  "version": "0.1.0",
+  "runtime": { "kind": "managed-app", "command": ["creator-t3-plugin"], "restart": "on-failure" },
+  "contributes": {
+    "navigation": [
+      { "id": "creator.command-center", "title": "Command center", "path": "/" },
+      { "id": "creator.ideas", "title": "Ideas", "path": "/ideas" },
+      { "id": "creator.production", "title": "Production", "path": "/production" },
+      { "id": "creator.publishing", "title": "Publishing", "path": "/publishing" },
+      { "id": "creator.analytics", "title": "Analytics", "path": "/analytics" },
+      { "id": "creator.sponsors", "title": "Sponsors", "path": "/sponsors" },
+      { "id": "creator.library", "title": "Media library", "path": "/library" }
+    ],
+    "panels": [
+      { "id": "creator.command-center", "title": "Creator command center", "surface": "project" },
+      { "id": "creator.publish-checks", "title": "Publish checks", "surface": "thread.sidePanel" }
+    ],
+    "workflows": [{ "id": "creator.video-readiness", "title": "Video readiness review", "surface": "thread.main" }],
+    "settings": [
+      { "id": "creator.workspace", "title": "Creator workspace", "scope": "server", "field": { "kind": "text" } },
+      { "id": "creator.polling-seconds", "title": "Refresh interval", "scope": "server", "field": { "kind": "number", "default": 60, "min": 15, "max": 3600, "step": 15 } }
+    ],
+    "settingsPanels": [{ "id": "creator.connection", "title": "Creator", "description": "Connect T3 Code to the Creator OS command center for ideas, production, publishing, analytics, sponsors, and media operations.", "settingIds": ["creator.workspace", "creator.polling-seconds"] }],
+    "hooks": ["turn.settled", "runtime.error"]
+  },
+  "capabilities": [
+    { "kind": "filesystem.read", "roots": ["project.root"] },
+    { "kind": "network.connect", "hosts": ["creator.forgegraf.com", "www.googleapis.com", "youtube.googleapis.com"] },
+    { "kind": "ui.embed", "surfaces": ["project", "thread.sidePanel", "thread.main"] }
+  ]
+}
