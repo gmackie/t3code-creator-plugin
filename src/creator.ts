@@ -5,6 +5,7 @@ export type CreatorPublishItem = { id: string; title: string; status: string; pu
 export type CreatorCalendarSlot = { id: string; projectId?: string; title: string; platform: string; date: string; status: string };
 export type CreatorSponsor = { id: string; name: string; status: string; disclosure?: string };
 export type CreatorSnapshot = { channel: { name: string; subscribers?: number }; ideas: readonly CreatorIdea[]; projects: readonly CreatorProject[]; publishQueue: readonly CreatorPublishItem[]; calendar: readonly CreatorCalendarSlot[]; analytics?: { ctr: number | null; views?: number; averageViewDurationSeconds?: number }; sponsors: readonly CreatorSponsor[] };
+export type CreatorNextAction = { id: string; title: string; reason: string; priority: "now" | "next" | "later"; navigationId: string; projectId?: string };
 export type SurfaceCard = { kind: "metric" | "list" | "notice"; id: string; title: string; value?: string; message?: string; items?: readonly { id: string; title: string; detail?: string; status?: "neutral" | "positive" | "warning" | "negative" }[]; status?: "neutral" | "positive" | "warning" | "negative" };
 export type SurfaceModel = { pluginId: string; navigationId: string; title: string; refreshedAt: string; cards: readonly SurfaceCard[] };
 export type CreatorWorkflowState = { readonly projectId?: string; readonly approved?: boolean; readonly published?: boolean; };
@@ -26,13 +27,29 @@ export function normalizeCreatorSnapshot(value: any): CreatorSnapshot {
   };
 }
 
+export function buildNextActions(snapshot: CreatorSnapshot): readonly CreatorNextAction[] {
+  const actions: CreatorNextAction[] = [];
+  for (const project of snapshot.projects) {
+    const missing = project.package && Object.entries(project.package).find(([, ready]) => ready === false)?.[0];
+    if (missing) {
+      const labels: Record<string, string> = { titleSelected: "choose a title", thumbnailSelected: "choose a thumbnail", hookReady: "finish the opening hook", captionsReady: "finish captions", disclosureReady: "add sponsor disclosure" };
+      actions.push({ id: `package:${project.id}`, title: `Finish package for ${project.title}`, reason: `Next: ${labels[missing] ?? missing}`, priority: "now", navigationId: "creator.production", projectId: project.id });
+    }
+  }
+  for (const item of snapshot.publishQueue.filter((item) => ["ready", "scheduled"].includes(item.status))) actions.push({ id: `publish:${item.id}`, title: `${item.status === "scheduled" ? "Check" : "Publish"} ${item.title}`, reason: item.publishAt ? `Scheduled ${item.publishAt}` : "Ready for explicit publish review", priority: "now", navigationId: "creator.publishing", projectId: item.id });
+  for (const sponsor of snapshot.sponsors.filter((sponsor) => ["signed", "in_production", "delivered"].includes(sponsor.status) && !sponsor.disclosure?.trim())) actions.push({ id: `sponsor:${sponsor.id}`, title: `Add disclosure for ${sponsor.name}`, reason: "A signed sponsor deal needs disclosure before publishing", priority: "now", navigationId: "creator.sponsors" });
+  for (const slot of snapshot.calendar.filter((slot) => slot.status === "planned").slice(0, 2)) actions.push({ id: `calendar:${slot.id}`, title: `Review ${slot.title} calendar slot`, reason: `${slot.platform} · ${slot.date}`, priority: "next", navigationId: "creator.publishing", projectId: slot.projectId });
+  for (const idea of snapshot.ideas.filter((idea) => ["spark", "proof"].includes(idea.rung)).slice(0, 2)) actions.push({ id: `idea:${idea.id}`, title: `Advance ${idea.title}`, reason: `${idea.rung} → package`, priority: "later", navigationId: "creator.ideas" });
+  return actions.slice(0, 8);
+}
+
 export function buildSurfaceModel(snapshot: CreatorSnapshot, navigationId = "creator.command-center"): SurfaceModel {
   return { pluginId: "com.t3code.creator", navigationId, title: "Creator command center", refreshedAt: new Date().toISOString(), cards: [
     { kind: "metric", id: "ideas", title: "Ideas in ladder", value: `${snapshot.ideas.length}`, status: snapshot.ideas.length > 0 ? "positive" : "warning" },
     { kind: "metric", id: "in-production", title: "In production", value: `${snapshot.projects.filter((project) => !["published", "archived"].includes(project.status)).length}` },
     { kind: "metric", id: "publish-queue", title: "Publish queue", value: `${snapshot.publishQueue.length}`, status: snapshot.publishQueue.length > 0 ? "positive" : "warning" },
     { kind: "metric", id: "calendar", title: "Upcoming calendar slots", value: `${snapshot.calendar.length}`, status: snapshot.calendar.length > 0 ? "positive" : "warning" },
-    { kind: "list", id: "next-actions", title: "Next actions", items: [...snapshot.publishQueue.slice(0, 4).map((item) => ({ id: item.id, title: `Publish ${item.title}`, detail: item.publishAt ?? item.status, status: item.status === "ready" ? "positive" as const : "warning" as const })), ...snapshot.ideas.filter((idea) => idea.rung === "spark" || idea.rung === "proof").slice(0, 4).map((idea) => ({ id: idea.id, title: `Advance ${idea.title}`, detail: `${idea.rung} → package`, status: "warning" as const }))] },
+    { kind: "list", id: "next-actions", title: "Your next best actions", items: buildNextActions(snapshot).map((action) => ({ id: action.id, title: action.title, detail: `${action.reason} · ${action.navigationId}`, status: action.priority === "now" ? "warning" as const : action.priority === "next" ? "neutral" as const : "positive" as const })) },
     { kind: "notice", id: "human-in-loop", title: "Human review stays in control", message: "Creator prepares packages, drafts, and publish checks; final editorial and publishing decisions remain explicit." },
   ] };
 }

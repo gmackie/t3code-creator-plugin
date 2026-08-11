@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildCreatorWorkflow, buildSurfaceModel, createCreatorClient, normalizeCreatorSnapshot } from "./creator.ts";
+import { buildCreatorWorkflow, buildNextActions, buildSurfaceModel, createCreatorClient, normalizeCreatorSnapshot } from "./creator.ts";
 
 describe("Creator adapter", () => {
   test("normalizes command-center content without inventing metrics", () => {
@@ -43,6 +43,21 @@ describe("Creator adapter", () => {
       expect.objectContaining({ id: "publish-queue" }),
       expect.objectContaining({ id: "calendar" }),
     ]));
+  });
+
+  test("prioritizes a small set of creator next actions with clear destinations", () => {
+    const snapshot = normalizeCreatorSnapshot({
+      channel: { name: "GMACKO" }, ideas: [{ id: "idea-1", title: "Future build", rung: "spark" }],
+      projects: [{ id: "video-1", title: "Launch", status: "editing", format: "long", package: { titleSelected: true, thumbnailSelected: false } }],
+      publishQueue: [{ id: "video-2", title: "Ready short", status: "ready" }],
+      sponsors: [{ id: "deal-1", name: "Acme", status: "signed" }], calendar: [],
+    });
+    expect(buildNextActions(snapshot)).toEqual([
+      expect.objectContaining({ id: "package:video-1", priority: "now", navigationId: "creator.production" }),
+      expect.objectContaining({ id: "publish:video-2", priority: "now", navigationId: "creator.publishing" }),
+      expect.objectContaining({ id: "sponsor:deal-1", priority: "now", navigationId: "creator.sponsors" }),
+      expect.objectContaining({ id: "idea:idea-1", priority: "later", navigationId: "creator.ideas" }),
+    ]);
   });
 
   test("builds a readiness workflow that highlights packaging gaps", () => {
