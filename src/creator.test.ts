@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildCreatorWorkflow, buildNextActions, buildPackageChecklist, buildSurfaceModel, createCreatorClient, normalizeCreatorSnapshot } from "./creator.ts";
+import { buildAnalyticsDiagnosis, buildCreatorWorkflow, buildNextActions, buildPackageChecklist, buildSurfaceModel, createCreatorClient, normalizeCreatorSnapshot } from "./creator.ts";
 
 describe("Creator adapter", () => {
   test("normalizes command-center content without inventing metrics", () => {
@@ -68,6 +68,12 @@ describe("Creator adapter", () => {
       expect.objectContaining({ id: "hook", status: "complete" }),
       expect.objectContaining({ id: "disclosure", status: "attention", navigationId: "creator.sponsors" }),
     ]));
+  });
+
+  test("turns analytics into an explainable next move without overstating certainty", () => {
+    expect(buildAnalyticsDiagnosis({ ctr: 2.5, views: 12000, averageViewDurationSeconds: 340 })).toMatchObject({ kind: "packaging", navigationId: "creator.production" });
+    expect(buildAnalyticsDiagnosis({ ctr: 6.2, views: 12000, averageViewDurationSeconds: 90 })).toMatchObject({ kind: "retention", navigationId: "creator.production" });
+    expect(buildAnalyticsDiagnosis({ ctr: null })).toMatchObject({ kind: "needs-data", navigationId: "creator.analytics" });
   });
 
   test("builds a readiness workflow that highlights packaging gaps", () => {

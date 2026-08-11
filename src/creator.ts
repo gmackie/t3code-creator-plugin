@@ -7,6 +7,7 @@ export type CreatorSponsor = { id: string; name: string; status: string; disclos
 export type CreatorSnapshot = { channel: { name: string; subscribers?: number }; ideas: readonly CreatorIdea[]; projects: readonly CreatorProject[]; publishQueue: readonly CreatorPublishItem[]; calendar: readonly CreatorCalendarSlot[]; analytics?: { ctr: number | null; views?: number; averageViewDurationSeconds?: number }; sponsors: readonly CreatorSponsor[] };
 export type CreatorNextAction = { id: string; title: string; reason: string; priority: "now" | "next" | "later"; navigationId: string; projectId?: string };
 export type CreatorPackageCheck = { id: "title" | "thumbnail" | "hook" | "captions" | "disclosure"; label: string; status: "complete" | "attention" | "not-configured" | "not-applicable"; reason: string; navigationId: string };
+export type CreatorAnalyticsDiagnosis = { kind: "packaging" | "retention" | "reach" | "healthy" | "needs-data"; title: string; reason: string; nextAction: string; navigationId: string };
 export type SurfaceCard = { kind: "metric" | "list" | "notice"; id: string; title: string; value?: string; message?: string; items?: readonly { id: string; title: string; detail?: string; status?: "neutral" | "positive" | "warning" | "negative" }[]; status?: "neutral" | "positive" | "warning" | "negative" };
 export type SurfaceModel = { pluginId: string; navigationId: string; title: string; refreshedAt: string; cards: readonly SurfaceCard[] };
 export type CreatorWorkflowState = { readonly projectId?: string; readonly approved?: boolean; readonly published?: boolean; };
@@ -57,6 +58,14 @@ export function buildPackageChecklist(snapshot: CreatorSnapshot, projectId?: str
     check("captions", "Captions and SEO", packageState?.captionsReady, packageState?.captionsReady ? "Captions and SEO are marked ready" : "Finish captions and metadata review", "creator.publishing"),
     { id: "disclosure", label: "Sponsor disclosure", status: disclosure === undefined ? "not-applicable" : disclosure ? "complete" : "attention", reason: disclosure === undefined ? "No active sponsor disclosure gate" : disclosure ? "Disclosure is ready" : "Add the sponsor disclosure before public publishing", navigationId: "creator.sponsors" },
   ];
+}
+
+export function buildAnalyticsDiagnosis(analytics: CreatorSnapshot["analytics"]): CreatorAnalyticsDiagnosis {
+  if (!analytics || analytics.ctr === null || analytics.averageViewDurationSeconds === undefined) return { kind: "needs-data", title: "More audience data needed", reason: "CTR and average view duration are both needed for a useful directional read.", nextAction: "Connect or refresh YouTube analytics", navigationId: "creator.analytics" };
+  if (analytics.ctr < 4 && analytics.averageViewDurationSeconds >= 240) return { kind: "packaging", title: "Packaging is the likely bottleneck", reason: "Viewers who click are watching; the title or thumbnail may be limiting the click-through rate.", nextAction: "Review title and thumbnail", navigationId: "creator.production" };
+  if (analytics.ctr >= 4 && analytics.averageViewDurationSeconds < 180) return { kind: "retention", title: "The opening is the likely bottleneck", reason: "The package earns clicks, but viewers are leaving early.", nextAction: "Review the first 30 seconds", navigationId: "creator.production" };
+  if (analytics.ctr < 4 && analytics.averageViewDurationSeconds < 240) return { kind: "reach", title: "Both packaging and retention need attention", reason: "This is a directional signal, not a verdict; improve the package and opening together.", nextAction: "Review package, then opening hook", navigationId: "creator.production" };
+  return { kind: "healthy", title: "No urgent bottleneck detected", reason: "CTR and average view duration are within the directional healthy range.", nextAction: "Capture the learning and test the next package", navigationId: "creator.ideas" };
 }
 
 export function buildSurfaceModel(snapshot: CreatorSnapshot, navigationId = "creator.command-center"): SurfaceModel {

@@ -15,7 +15,7 @@ describe("Creator RPC", () => {
     const handler = createRpcHandler({ snapshot: detailed, refresh: async () => detailed });
     await expect(handler("panel.get", { panelId: "creator.publish-queue" })).resolves.toMatchObject({ ok: true, result: { content: { kind: "publish-queue", items: [{ id: "video-1" }] } } });
     await expect(handler("panel.get", { panelId: "creator.content-calendar" })).resolves.toMatchObject({ ok: true, result: { content: { kind: "content-calendar", slots: [{ id: "slot-1" }] } } });
-    await expect(handler("panel.get", { panelId: "creator.analytics" })).resolves.toMatchObject({ ok: true, result: { content: { kind: "analytics", metrics: { ctr: 5.4 } } } });
+    await expect(handler("panel.get", { panelId: "creator.analytics" })).resolves.toMatchObject({ ok: true, result: { content: { kind: "analytics", metrics: { ctr: 5.4 }, diagnosis: { kind: "healthy" } } } });
   });
 
   test("serves a project package review room", async () => {
