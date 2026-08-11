@@ -8,6 +8,7 @@ export type CreatorSnapshot = { channel: { name: string; subscribers?: number };
 export type CreatorNextAction = { id: string; title: string; reason: string; priority: "now" | "next" | "later"; navigationId: string; projectId?: string };
 export type CreatorPackageCheck = { id: "title" | "thumbnail" | "hook" | "captions" | "disclosure"; label: string; status: "complete" | "attention" | "not-configured" | "not-applicable"; reason: string; navigationId: string };
 export type CreatorAnalyticsDiagnosis = { kind: "packaging" | "retention" | "reach" | "healthy" | "needs-data"; title: string; reason: string; nextAction: string; navigationId: string };
+export type CreatorIdeaLadderStage = { rung: Exclude<CreatorIdea["rung"], "unknown">; title: string; count: number; items: readonly { id: string; title: string; nextAction: string }[] };
 export type SurfaceCard = { kind: "metric" | "list" | "notice"; id: string; title: string; value?: string; message?: string; items?: readonly { id: string; title: string; detail?: string; status?: "neutral" | "positive" | "warning" | "negative" }[]; status?: "neutral" | "positive" | "warning" | "negative" };
 export type SurfaceModel = { pluginId: string; navigationId: string; title: string; refreshedAt: string; cards: readonly SurfaceCard[] };
 export type CreatorWorkflowState = { readonly projectId?: string; readonly approved?: boolean; readonly published?: boolean; };
@@ -66,6 +67,25 @@ export function buildAnalyticsDiagnosis(analytics: CreatorSnapshot["analytics"])
   if (analytics.ctr >= 4 && analytics.averageViewDurationSeconds < 180) return { kind: "retention", title: "The opening is the likely bottleneck", reason: "The package earns clicks, but viewers are leaving early.", nextAction: "Review the first 30 seconds", navigationId: "creator.production" };
   if (analytics.ctr < 4 && analytics.averageViewDurationSeconds < 240) return { kind: "reach", title: "Both packaging and retention need attention", reason: "This is a directional signal, not a verdict; improve the package and opening together.", nextAction: "Review package, then opening hook", navigationId: "creator.production" };
   return { kind: "healthy", title: "No urgent bottleneck detected", reason: "CTR and average view duration are within the directional healthy range.", nextAction: "Capture the learning and test the next package", navigationId: "creator.ideas" };
+}
+
+export function buildIdeaLadderModel(snapshot: CreatorSnapshot): readonly CreatorIdeaLadderStage[] {
+  const stages = [
+    { rung: "spark", title: "Sparks", nextAction: "Add proof" },
+    { rung: "proof", title: "Proof", nextAction: "Shape a package" },
+    { rung: "package", title: "Packages", nextAction: "Start production" },
+    { rung: "production", title: "In production", nextAction: "Prepare publish" },
+    { rung: "publish", title: "Ready to publish", nextAction: "Run publish checks" },
+  ] as const;
+  return stages.map((stage) => {
+    const items = snapshot.ideas.filter((idea) => idea.rung === stage.rung);
+    return {
+      rung: stage.rung,
+      title: stage.title,
+      count: items.length,
+      items: items.slice(0, 8).map((idea) => ({ id: idea.id, title: idea.title, nextAction: stage.nextAction })),
+    };
+  });
 }
 
 export function buildSurfaceModel(snapshot: CreatorSnapshot, navigationId = "creator.command-center"): SurfaceModel {

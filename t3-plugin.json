@@ -20,6 +20,7 @@
       { "id": "creator.publish-queue", "title": "Publish queue", "surface": "project" },
       { "id": "creator.content-calendar", "title": "Content calendar", "surface": "project" },
       { "id": "creator.analytics", "title": "Creator analytics", "surface": "project" },
+      { "id": "creator.idea-ladder", "title": "Idea ladder", "surface": "project" },
       { "id": "creator.package-review", "title": "Package review", "surface": "thread.sidePanel" }
     ],
     "workflows": [{ "id": "creator.video-readiness", "title": "Video readiness review", "surface": "thread.main" }],

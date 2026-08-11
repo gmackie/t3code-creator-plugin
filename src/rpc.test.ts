@@ -18,6 +18,15 @@ describe("Creator RPC", () => {
     await expect(handler("panel.get", { panelId: "creator.analytics" })).resolves.toMatchObject({ ok: true, result: { content: { kind: "analytics", metrics: { ctr: 5.4 }, diagnosis: { kind: "healthy" } } } });
   });
 
+  test("serves the idea ladder panel", async () => {
+    const detailed = { ...snapshot, ideas: [{ id: "i1", title: "Spark", rung: "spark" as const }] };
+    const handler = createRpcHandler({ snapshot: detailed, refresh: async () => detailed });
+    await expect(handler("panel.get", { panelId: "creator.idea-ladder" })).resolves.toMatchObject({
+      ok: true,
+      result: { content: { kind: "idea-ladder", stages: expect.arrayContaining([expect.objectContaining({ rung: "spark", count: 1 })]) } },
+    });
+  });
+
   test("serves a project package review room", async () => {
     const detailed = { ...snapshot, projects: [{ id: "video-1", title: "Next", status: "editing", format: "long" as const, package: { titleSelected: true, thumbnailSelected: false } }], sponsors: [{ id: "deal-1", name: "Acme", status: "signed" }] };
     const handler = createRpcHandler({ snapshot: detailed, refresh: async () => detailed });

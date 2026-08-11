@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildAnalyticsDiagnosis, buildCreatorWorkflow, buildNextActions, buildPackageChecklist, buildSurfaceModel, createCreatorClient, normalizeCreatorSnapshot } from "./creator.ts";
+import { buildAnalyticsDiagnosis, buildCreatorWorkflow, buildIdeaLadderModel, buildNextActions, buildPackageChecklist, buildSurfaceModel, createCreatorClient, normalizeCreatorSnapshot } from "./creator.ts";
 
 describe("Creator adapter", () => {
   test("normalizes command-center content without inventing metrics", () => {
@@ -43,6 +43,25 @@ describe("Creator adapter", () => {
       expect.objectContaining({ id: "publish-queue" }),
       expect.objectContaining({ id: "calendar" }),
     ]));
+  });
+
+  test("groups ideas into an idea-to-publish ladder", () => {
+    const snapshot = normalizeCreatorSnapshot({
+      channel: { name: "GMACKO" },
+      ideas: [
+        { id: "i1", title: "Spark", rung: "spark" },
+        { id: "i2", title: "Proof", rung: "proof" },
+        { id: "i3", title: "Packaged", rung: "package" },
+      ],
+      projects: [], publishQueue: [], calendar: [], sponsors: [],
+    });
+    expect(buildIdeaLadderModel(snapshot)).toEqual([
+      expect.objectContaining({ rung: "spark", count: 1, items: [expect.objectContaining({ id: "i1" })] }),
+      expect.objectContaining({ rung: "proof", count: 1 }),
+      expect.objectContaining({ rung: "package", count: 1 }),
+      expect.objectContaining({ rung: "production", count: 0 }),
+      expect.objectContaining({ rung: "publish", count: 0 }),
+    ]);
   });
 
   test("prioritizes a small set of creator next actions with clear destinations", () => {
