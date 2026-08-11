@@ -9,4 +9,4 @@ The plugin keeps Creator domain state in Creator and exposes normalized T3 surfa
 - publish callback through a configured Creator command;
 - restart-safe workflow state via `T3_PLUGIN_STATE_FILE`.
 
-Configure `T3_PLUGIN_COMMAND` to a Creator command that accepts `command-center --workspace <id> --json` and returns the command-center snapshot. Configure `T3_PLUGIN_PUBLISH_COMMAND` for explicit publish/schedule actions.
+Configure `T3_PLUGIN_COMMAND` to the Creator operator CLI, for example `pnpm --dir /Volumes/dev/creator trpc:ops`, which now exposes `video_creator_snapshot --workspace <id> --json`. Configure `T3_PLUGIN_PUBLISH_COMMAND` for explicit publish/schedule actions.

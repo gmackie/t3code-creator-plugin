@@ -50,6 +50,6 @@ describe("Creator adapter", () => {
     const commands: string[][] = [];
     const client = createCreatorClient({ workspaceId: "workspace-1", run: async (command) => { commands.push([...command]); return { channel: { name: "GMACKO" }, ideas: [], projects: [], publishQueue: [] }; } });
     await expect(client.snapshot()).resolves.toMatchObject({ channel: { name: "GMACKO" } });
-    expect(commands).toEqual([["command-center", "--workspace", "workspace-1", "--json"]]);
+    expect(commands).toEqual([["video_creator_snapshot", "--workspace", "workspace-1", "--json"]]);
   });
 });
