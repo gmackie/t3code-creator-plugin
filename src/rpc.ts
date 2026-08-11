@@ -1,4 +1,4 @@
-import { buildCreatorWorkflow, buildSurfaceModel, type CreatorSnapshot, type CreatorWorkflowState } from "./creator.ts";
+import { buildCreatorWorkflow, buildPackageChecklist, buildSurfaceModel, type CreatorSnapshot, type CreatorWorkflowState } from "./creator.ts";
 
 export function createRpcHandler(coordinator: {
   snapshot: CreatorSnapshot | null;
@@ -18,6 +18,7 @@ export function createRpcHandler(coordinator: {
     if (method === "panel.get" && payload?.panelId === "creator.publish-queue") return { ok: true as const, result: { pluginId: "com.t3code.creator", panelId: "creator.publish-queue", title: "Publish queue", kind: "publish-queue" as const, refreshedAt: new Date().toISOString(), content: { kind: "publish-queue" as const, items: snapshot.publishQueue } } };
     if (method === "panel.get" && payload?.panelId === "creator.content-calendar") return { ok: true as const, result: { pluginId: "com.t3code.creator", panelId: "creator.content-calendar", title: "Content calendar", kind: "content-calendar" as const, refreshedAt: new Date().toISOString(), content: { kind: "content-calendar" as const, slots: snapshot.calendar } } };
     if (method === "panel.get" && payload?.panelId === "creator.analytics") return { ok: true as const, result: { pluginId: "com.t3code.creator", panelId: "creator.analytics", title: "Creator analytics", kind: "analytics" as const, refreshedAt: new Date().toISOString(), content: { kind: "analytics" as const, metrics: snapshot.analytics ?? { ctr: null } } } };
+    if (method === "panel.get" && payload?.panelId === "creator.package-review") { const projectId = ((payload.input ?? {}) as { projectId?: string }).projectId ?? snapshot.projects[0]?.id; return { ok: true as const, result: { pluginId: "com.t3code.creator", panelId: "creator.package-review", title: "Package review", kind: "package-review" as const, refreshedAt: new Date().toISOString(), content: { kind: "package-review" as const, projectId, projectTitle: snapshot.projects.find((project) => project.id === projectId)?.title ?? "Select a project", checks: buildPackageChecklist(snapshot, projectId) } } }; }
     if (method === "action.execute" && payload?.workflowId === "creator.video-readiness") {
       const existing = currentState();
       if (payload.actionId === "approve") { const projectId = ((payload.input ?? {}) as { projectId?: string }).projectId; await saveState({ ...existing, ...(projectId ? { projectId } : {}), approved: true }); return { ok: true as const, result: { status: "approved" as const } }; }

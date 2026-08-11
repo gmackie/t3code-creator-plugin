@@ -18,6 +18,12 @@ describe("Creator RPC", () => {
     await expect(handler("panel.get", { panelId: "creator.analytics" })).resolves.toMatchObject({ ok: true, result: { content: { kind: "analytics", metrics: { ctr: 5.4 } } } });
   });
 
+  test("serves a project package review room", async () => {
+    const detailed = { ...snapshot, projects: [{ id: "video-1", title: "Next", status: "editing", format: "long" as const, package: { titleSelected: true, thumbnailSelected: false } }], sponsors: [{ id: "deal-1", name: "Acme", status: "signed" }] };
+    const handler = createRpcHandler({ snapshot: detailed, refresh: async () => detailed });
+    await expect(handler("panel.get", { panelId: "creator.package-review", input: { projectId: "video-1" } })).resolves.toMatchObject({ ok: true, result: { content: { kind: "package-review", projectId: "video-1", checks: expect.arrayContaining([expect.objectContaining({ id: "thumbnail", status: "attention" })]) } } });
+  });
+
   test("requires explicit approval before invoking publish", async () => {
     let approved = false;
     let published = false;

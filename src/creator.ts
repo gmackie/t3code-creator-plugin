@@ -6,6 +6,7 @@ export type CreatorCalendarSlot = { id: string; projectId?: string; title: strin
 export type CreatorSponsor = { id: string; name: string; status: string; disclosure?: string };
 export type CreatorSnapshot = { channel: { name: string; subscribers?: number }; ideas: readonly CreatorIdea[]; projects: readonly CreatorProject[]; publishQueue: readonly CreatorPublishItem[]; calendar: readonly CreatorCalendarSlot[]; analytics?: { ctr: number | null; views?: number; averageViewDurationSeconds?: number }; sponsors: readonly CreatorSponsor[] };
 export type CreatorNextAction = { id: string; title: string; reason: string; priority: "now" | "next" | "later"; navigationId: string; projectId?: string };
+export type CreatorPackageCheck = { id: "title" | "thumbnail" | "hook" | "captions" | "disclosure"; label: string; status: "complete" | "attention" | "not-configured" | "not-applicable"; reason: string; navigationId: string };
 export type SurfaceCard = { kind: "metric" | "list" | "notice"; id: string; title: string; value?: string; message?: string; items?: readonly { id: string; title: string; detail?: string; status?: "neutral" | "positive" | "warning" | "negative" }[]; status?: "neutral" | "positive" | "warning" | "negative" };
 export type SurfaceModel = { pluginId: string; navigationId: string; title: string; refreshedAt: string; cards: readonly SurfaceCard[] };
 export type CreatorWorkflowState = { readonly projectId?: string; readonly approved?: boolean; readonly published?: boolean; };
@@ -41,6 +42,21 @@ export function buildNextActions(snapshot: CreatorSnapshot): readonly CreatorNex
   for (const slot of snapshot.calendar.filter((slot) => slot.status === "planned").slice(0, 2)) actions.push({ id: `calendar:${slot.id}`, title: `Review ${slot.title} calendar slot`, reason: `${slot.platform} · ${slot.date}`, priority: "next", navigationId: "creator.publishing", projectId: slot.projectId });
   for (const idea of snapshot.ideas.filter((idea) => ["spark", "proof"].includes(idea.rung)).slice(0, 2)) actions.push({ id: `idea:${idea.id}`, title: `Advance ${idea.title}`, reason: `${idea.rung} → package`, priority: "later", navigationId: "creator.ideas" });
   return actions.slice(0, 8);
+}
+
+export function buildPackageChecklist(snapshot: CreatorSnapshot, projectId?: string): readonly CreatorPackageCheck[] {
+  const project = snapshot.projects.find((candidate) => candidate.id === projectId) ?? snapshot.projects[0];
+  const packageState = project?.package;
+  const check = (id: CreatorPackageCheck["id"], label: string, value: boolean | undefined, reason: string, navigationId: string): CreatorPackageCheck => ({ id, label, status: value === true ? "complete" : value === false ? "attention" : "not-configured", reason, navigationId });
+  const sponsored = snapshot.sponsors.some((sponsor) => ["signed", "in_production", "delivered"].includes(sponsor.status));
+  const disclosure = packageState?.disclosureReady ?? (sponsored ? (snapshot.sponsors.filter((sponsor) => ["signed", "in_production", "delivered"].includes(sponsor.status)).every((sponsor) => Boolean(sponsor.disclosure?.trim())) ? true : false) : undefined);
+  return [
+    check("title", "Title", packageState?.titleSelected, packageState?.titleSelected ? "A title is selected" : "Choose one title before publish review", "creator.production"),
+    check("thumbnail", "Thumbnail", packageState?.thumbnailSelected, packageState?.thumbnailSelected ? "A thumbnail is selected" : "Choose a thumbnail or confirm an A/B winner", "creator.production"),
+    check("hook", "Opening hook", packageState?.hookReady, packageState?.hookReady ? "Opening hook is marked ready" : "Review the first 15–30 seconds", "creator.production"),
+    check("captions", "Captions and SEO", packageState?.captionsReady, packageState?.captionsReady ? "Captions and SEO are marked ready" : "Finish captions and metadata review", "creator.publishing"),
+    { id: "disclosure", label: "Sponsor disclosure", status: disclosure === undefined ? "not-applicable" : disclosure ? "complete" : "attention", reason: disclosure === undefined ? "No active sponsor disclosure gate" : disclosure ? "Disclosure is ready" : "Add the sponsor disclosure before public publishing", navigationId: "creator.sponsors" },
+  ];
 }
 
 export function buildSurfaceModel(snapshot: CreatorSnapshot, navigationId = "creator.command-center"): SurfaceModel {
