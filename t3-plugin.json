@@ -3,7 +3,7 @@
   "id": "com.t3code.creator",
   "displayName": "Creator command center",
   "version": "0.1.0",
-  "runtime": { "kind": "managed-app", "command": ["creator-t3-plugin"], "restart": "on-failure" },
+  "runtime": { "kind": "managed-app", "command":["bun","src/stdio.ts"], "restart": "on-failure" },
   "contributes": {
     "navigation": [
       { "id": "creator.command-center", "title": "Command center", "path": "/" },
