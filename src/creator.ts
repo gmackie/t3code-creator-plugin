@@ -142,4 +142,12 @@ export function buildCreatorWorkflow(snapshot: CreatorSnapshot, state: CreatorWo
   return { pluginId: "com.t3code.creator", workflowId: "creator.video-readiness", title: "Video readiness review", currentStage: state.published ? "verify" : state.approved ? "execute" : "review", refreshedAt: new Date().toISOString(), steps, evidence: [{ id: "package-readiness", title: "Package readiness", kind: "check", status: ready ? "positive" : "warning", detail: ready ? `${project?.title ?? "Project"} is ready for publishing` : `Package checks for ${project?.title ?? "the active project"} need attention` }], actions: state.published ? [] : state.approved ? [{ id: "publish", title: "Publish or schedule video", tone: "primary" }] : [{ id: "approve", title: "Approve creator package", tone: "primary" }] };
 }
 
-export function createCreatorClient(input: { workspaceId: string; run: CommandRunner }) { return { async snapshot() { return normalizeCreatorSnapshot(await input.run(["video_creator_snapshot", "--workspace", input.workspaceId, "--json"])); } }; }
+// `video_creator_snapshot` in Creator's operator CLI (packages/operator-core);
+// `--projectId` picks the project whose package readiness is filled in.
+export function createCreatorClient(input: { workspaceId: string; run: CommandRunner }) {
+  return {
+    async snapshot(projectId?: string) {
+      return normalizeCreatorSnapshot(await input.run(["video_creator_snapshot", "--workspace", input.workspaceId, ...(projectId ? ["--projectId", projectId] : []), "--json"]));
+    },
+  };
+}
