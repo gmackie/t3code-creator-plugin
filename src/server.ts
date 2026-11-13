@@ -35,7 +35,7 @@ const both = (view: ViewName) => ({ ui: { resourceUri: VIEWS[view].uri, visibili
 export function createCreatorMcpServer(options: CreatorServerOptions): McpServer {
   const server = new McpServer(SERVER_INFO, {
     instructions:
-      "Creator is the user's video command center (ideas, production, publishing, analytics, sponsors). Use creator_command_center for the next best actions, the panel tools for detail, and creator_video_readiness before publishing. Publishing requires a human to approve the package in the video readiness view.",
+      "Creator is the user's video command center (ideas, production, publishing, analytics, sponsors). Use creator_command_center for the next best actions, the panel tools for detail, and creator_video_readiness before publishing. Only a human can approve and publish a package, from the video readiness view.",
   });
 
   const base = (snapshot: CreatorSnapshot) => ({ channel: snapshot.channel.name, refreshedAt: new Date().toISOString(), pollSeconds: options.pollSeconds });
@@ -217,8 +217,10 @@ export function createCreatorMcpServer(options: CreatorServerOptions): McpServer
       title: "Publish or schedule video",
       description: "Publish or schedule an approved video project through the configured Creator publish command. Fails unless a human approved the package in the video readiness view.",
       inputSchema: z.object({ projectId }),
-      annotations: { destructiveHint: false, openWorldHint: true },
-      _meta: both("videoReadiness"),
+      // Publishing to YouTube is irreversible and, as in v1, only a human
+      // clicking Publish in the readiness view may do it.
+      annotations: { destructiveHint: true, openWorldHint: true },
+      _meta: { ui: { resourceUri: VIEWS.videoReadiness.uri, visibility: ["app"] } },
     },
     async ({ projectId: id }) =>
       result(async () => {

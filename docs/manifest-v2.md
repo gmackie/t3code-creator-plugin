@@ -11,7 +11,7 @@
 - `contributes.commands[]` replace v1 `navigation` and open the matching panel.
 - `t3Tools` is `[]`. Creator never calls back into T3, and v1 never asked for a T3 capability.
 
-The real data source is Creator's operator CLI (`video_creator_snapshot` in `packages/operator-core`). The plugin spawns `CREATOR_COMMAND` without a shell, bounds each run at 30 s, and parses its JSON. When the command is unset, fails, times out or prints something other than JSON, the tool returns an error result with one short line: no stack traces, no URLs, no empty placeholder data.
+The real data source is Creator's operator CLI (`video_creator_snapshot` in `packages/operator-core`). The plugin spawns `CREATOR_COMMAND` without a shell, bounds each run at 30 s (on timeout it kills the command's whole process group, since the usual command is a `pnpm` wrapper, and returns without waiting for its pipes), and parses its JSON. When the command is unset, fails, times out or prints something other than JSON, the tool returns an error result with one short line: no stack traces, no URLs, no empty placeholder data.
 
 ## v1 → v2 mapping
 
@@ -55,11 +55,11 @@ The last v1 manifest is at commit 7e0bf79.
 ## Server rules
 
 - **Visibility.**
-  - Every view tool (`creator_command_center`, `creator_publish_queue`, `creator_content_calendar`, `creator_analytics`, `creator_idea_ladder`, `creator_sponsor_deal_room`, `creator_package_review`, `creator_video_readiness`, `creator_video_publish`) is `["model", "app"]`.
-  - `creator_video_approve` is `["app"]`, so only a human in a view can approve a package. `creator_video_publish` fails until that approval exists, and refuses a second publish.
+  - Every view tool (`creator_command_center`, `creator_publish_queue`, `creator_content_calendar`, `creator_analytics`, `creator_idea_ladder`, `creator_sponsor_deal_room`, `creator_package_review`, `creator_video_readiness`) is `["model", "app"]`.
+  - `creator_video_approve` and `creator_video_publish` are `["app"]`, matching v1, where publishing was only a human-clicked workflow action. An agent can read readiness but can never approve or publish. `creator_video_publish` is marked `destructiveHint: true` (a public YouTube upload cannot be undone), fails until an approval exists, and refuses a second publish.
   - A publish only counts when the publish command reports `published` or `scheduled`. Anything else is an error, and approval is kept so the human can retry.
 - **No T3 token needed.** Only the pool copy gets `T3_MCP_URL`/`T3_MCP_TOKEN`. Creator doesn't use them, so every copy behaves the same.
-- **Stateless processes.** T3 runs one stdio copy per agent session plus one in its pool. The approval from a panel (pool copy) and the agent's publish (session copy) can run in different processes. Approvals therefore live in one JSON file per machine, keyed by Creator project id, at `CREATOR_STATE_PATH` (default `$XDG_STATE_HOME/t3code-creator-plugin/state.json`). Writes go to a temp file and are renamed into place. `server.test.ts` approves in one copy and publishes from another.
+- **Stateless processes.** T3 runs one stdio copy per agent session plus one in its pool. A panel's Approve and its later Publish click can be served by different copies (or across a restart). Approvals therefore live in one JSON file per machine, keyed by Creator project id, at `CREATOR_STATE_PATH` (default `$XDG_STATE_HOME/t3code-creator-plugin/state.json`). Writes go to a temp file and are renamed into place. `server.test.ts` approves in one copy and publishes from another.
 
 ## Open questions
 

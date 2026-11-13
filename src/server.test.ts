@@ -15,18 +15,18 @@ const VIEW_TOOLS = [
   "creator_package_review",
   "creator_publish_queue",
   "creator_sponsor_deal_room",
-  "creator_video_publish",
   "creator_video_readiness",
 ];
 
 describe("Creator MCP server", () => {
-  it("links view tools to ui:// views and hides approval from the model", async () => {
+  it("links view tools to ui:// views and hides approval and publishing from the model", async () => {
     const { client } = await connectedClient();
     const { tools } = await client.listTools();
     const byName = new Map(tools.map((tool) => [tool.name, tool]));
-    expect([...byName.keys()].sort()).toEqual([...VIEW_TOOLS, "creator_video_approve"].sort());
+    expect([...byName.keys()].sort()).toEqual([...VIEW_TOOLS, "creator_video_approve", "creator_video_publish"].sort());
     expect(byName.get("creator_command_center")?._meta).toMatchObject({ ui: { resourceUri: "ui://creator/command-center.html", visibility: ["model", "app"] } });
-    expect(byName.get("creator_video_publish")?._meta).toMatchObject({ ui: { resourceUri: "ui://creator/video-readiness.html" } });
+    expect(byName.get("creator_video_publish")?._meta).toMatchObject({ ui: { resourceUri: "ui://creator/video-readiness.html", visibility: ["app"] } });
+    expect(byName.get("creator_video_publish")?.annotations?.destructiveHint).toBe(true);
     expect(byName.get("creator_video_approve")?._meta).toEqual({ ui: { visibility: ["app"] } });
     for (const name of VIEW_TOOLS) expect((byName.get(name)?._meta as { ui: { visibility: string[] } }).ui.visibility).toEqual(["model", "app"]);
     expect(byName.get("creator_analytics")?.annotations?.readOnlyHint).toBe(true);
@@ -90,7 +90,7 @@ describe("Creator MCP server", () => {
 
   it("shares approval between plugin copies through the state file", async () => {
     // T3 runs one stdio copy per agent session plus one in its pool: a panel
-    // approves in one process and the agent publishes from another.
+    // panel click can be served by a different copy than the next one.
     const path = join(tmpdir(), `creator-state-${crypto.randomUUID()}`, "state.json");
     const pool = await connectedClient({ state: fileStateStore(path) });
     const session = await connectedClient({ state: fileStateStore(path) });

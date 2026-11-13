@@ -19,7 +19,7 @@ The server is a stdio server on the official MCP TypeScript SDK v2. Its views ar
 | `creator_package_review` | `creator-package-review` and `creator-publish-checks` (thread): title, thumbnail, hook, captions, disclosure | model, app |
 | `creator_video_readiness` | `creator-video-readiness` (thread): the readiness workflow | model, app |
 | `creator_video_approve` | Approve button in the readiness view | app only |
-| `creator_video_publish` | Publish button; fails until a human approved | model, app |
+| `creator_video_publish` | Publish button; fails until a human approved. Destructive: a human-only action, as in v1 | app only |
 
 Each tool runs Creator's operator CLI (`video_creator_snapshot --workspace <id> [--projectId <id>] --json`). A missing, failing, slow (30 s) or non-JSON command becomes a short error result. The plugin never shows placeholder data.
 
