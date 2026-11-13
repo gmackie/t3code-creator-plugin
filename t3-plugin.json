@@ -1,40 +1,138 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "com.t3code.creator",
   "displayName": "Creator command center",
-  "version": "0.1.0",
-  "runtime": { "kind": "managed-app", "command":["bun","src/stdio.ts"], "restart": "on-failure" },
-  "contributes": {
-    "navigation": [
-      { "id": "creator.command-center", "title": "Command center", "path": "/" },
-      { "id": "creator.ideas", "title": "Ideas", "path": "/ideas" },
-      { "id": "creator.production", "title": "Production", "path": "/production" },
-      { "id": "creator.publishing", "title": "Publishing", "path": "/publishing" },
-      { "id": "creator.analytics", "title": "Analytics", "path": "/analytics" },
-      { "id": "creator.sponsors", "title": "Sponsors", "path": "/sponsors" },
-      { "id": "creator.library", "title": "Media library", "path": "/library" }
-    ],
-    "panels": [
-      { "id": "creator.command-center", "title": "Creator command center", "surface": "project" },
-      { "id": "creator.publish-checks", "title": "Publish checks", "surface": "thread.sidePanel" },
-      { "id": "creator.publish-queue", "title": "Publish queue", "surface": "project" },
-      { "id": "creator.content-calendar", "title": "Content calendar", "surface": "project" },
-      { "id": "creator.analytics", "title": "Creator analytics", "surface": "project" },
-      { "id": "creator.idea-ladder", "title": "Idea ladder", "surface": "project" },
-      { "id": "creator.sponsors", "title": "Sponsor deal room", "surface": "project" },
-      { "id": "creator.package-review", "title": "Package review", "surface": "thread.sidePanel" }
-    ],
-    "workflows": [{ "id": "creator.video-readiness", "title": "Video readiness review", "surface": "thread.main" }],
-    "settings": [
-      { "id": "creator.workspace", "title": "Creator workspace", "scope": "server", "field": { "kind": "text" } },
-      { "id": "creator.polling-seconds", "title": "Refresh interval", "scope": "server", "field": { "kind": "number", "default": 60, "min": 15, "max": 3600, "step": 15 } }
-    ],
-    "settingsPanels": [{ "id": "creator.connection", "title": "Creator", "description": "Connect T3 Code to the Creator OS command center for ideas, production, publishing, analytics, sponsors, and media operations.", "settingIds": ["creator.workspace", "creator.polling-seconds"] }],
-    "hooks": ["turn.settled", "runtime.error"]
+  "version": "0.2.0",
+  "description": "Creator OS ideas, production, publishing, analytics and sponsors for T3 Code, with human-approved publishing.",
+  "mcpServer": {
+    "name": "creator",
+    "transport": {
+      "type": "stdio",
+      "command": "bun",
+      "args": [
+        "${pluginRoot}/src/mcp.ts"
+      ],
+      "env": [
+        {
+          "name": "CREATOR_COMMAND",
+          "value": "",
+          "title": "Creator operator command",
+          "description": "Command that runs the Creator operator CLI, e.g. pnpm --dir /path/to/creator trpc:ops. Split on spaces, no shell."
+        },
+        {
+          "name": "CREATOR_PUBLISH_COMMAND",
+          "value": "",
+          "title": "Creator publish command",
+          "description": "Command called with --project-id <id> --json to publish or schedule an approved video. Leave empty to disable publishing."
+        },
+        {
+          "name": "CREATOR_WORKSPACE",
+          "value": "",
+          "title": "Creator workspace"
+        },
+        {
+          "name": "GMACKO_API_URL",
+          "value": "",
+          "title": "Creator API endpoint",
+          "description": "Passed to the Creator commands; the CLI defaults to http://localhost:3000."
+        },
+        {
+          "name": "GMACKO_API_KEY",
+          "value": "",
+          "sensitive": true,
+          "title": "Creator API key",
+          "description": "Passed to the Creator commands for protected calls."
+        },
+        {
+          "name": "CREATOR_POLL_SECONDS",
+          "value": "60",
+          "title": "Refresh interval in seconds (15-3600)"
+        },
+        {
+          "name": "CREATOR_STATE_PATH",
+          "value": "",
+          "title": "Shared approval state file",
+          "description": "Optional absolute JSON path shared by every plugin copy. Defaults to $XDG_STATE_HOME/t3code-creator-plugin/state.json."
+        }
+      ]
+    }
   },
-  "capabilities": [
-    { "kind": "filesystem.read", "roots": ["project.root"] },
-    { "kind": "network.connect", "hosts": ["creator.forgegraf.com", "www.googleapis.com", "youtube.googleapis.com"] },
-    { "kind": "ui.embed", "surfaces": ["project", "thread.sidePanel", "thread.main"] }
-  ]
+  "contributes": {
+    "panels": [
+      {
+        "id": "creator-command-center",
+        "title": "Creator command center",
+        "scope": "project",
+        "resourceUri": "ui://creator/command-center.html",
+        "tool": { "name": "creator_command_center", "arguments": {} }
+      },
+      {
+        "id": "creator-publish-checks",
+        "title": "Publish checks",
+        "scope": "thread",
+        "resourceUri": "ui://creator/package-review.html",
+        "tool": { "name": "creator_package_review", "arguments": {} }
+      },
+      {
+        "id": "creator-publish-queue",
+        "title": "Publish queue",
+        "scope": "project",
+        "resourceUri": "ui://creator/publish-queue.html",
+        "tool": { "name": "creator_publish_queue", "arguments": {} }
+      },
+      {
+        "id": "creator-content-calendar",
+        "title": "Content calendar",
+        "scope": "project",
+        "resourceUri": "ui://creator/content-calendar.html",
+        "tool": { "name": "creator_content_calendar", "arguments": {} }
+      },
+      {
+        "id": "creator-analytics",
+        "title": "Creator analytics",
+        "scope": "project",
+        "resourceUri": "ui://creator/analytics.html",
+        "tool": { "name": "creator_analytics", "arguments": {} }
+      },
+      {
+        "id": "creator-idea-ladder",
+        "title": "Idea ladder",
+        "scope": "project",
+        "resourceUri": "ui://creator/idea-ladder.html",
+        "tool": { "name": "creator_idea_ladder", "arguments": {} }
+      },
+      {
+        "id": "creator-sponsors",
+        "title": "Sponsor deal room",
+        "scope": "project",
+        "resourceUri": "ui://creator/sponsor-deal-room.html",
+        "tool": { "name": "creator_sponsor_deal_room", "arguments": {} }
+      },
+      {
+        "id": "creator-package-review",
+        "title": "Package review",
+        "scope": "thread",
+        "resourceUri": "ui://creator/package-review.html",
+        "tool": { "name": "creator_package_review", "arguments": {} }
+      },
+      {
+        "id": "creator-video-readiness",
+        "title": "Video readiness review",
+        "scope": "thread",
+        "resourceUri": "ui://creator/video-readiness.html",
+        "tool": { "name": "creator_video_readiness", "arguments": {} }
+      }
+    ],
+    "commands": [
+      { "id": "creator-open-command-center", "title": "Creator: Open command center", "panel": "creator-command-center" },
+      { "id": "creator-open-ideas", "title": "Creator: Open ideas", "panel": "creator-idea-ladder" },
+      { "id": "creator-open-production", "title": "Creator: Open production (package review)", "panel": "creator-package-review" },
+      { "id": "creator-open-publishing", "title": "Creator: Open publishing", "panel": "creator-publish-queue" },
+      { "id": "creator-open-calendar", "title": "Creator: Open content calendar", "panel": "creator-content-calendar" },
+      { "id": "creator-open-analytics", "title": "Creator: Open analytics", "panel": "creator-analytics" },
+      { "id": "creator-open-sponsors", "title": "Creator: Open sponsors", "panel": "creator-sponsors" },
+      { "id": "creator-open-video-readiness", "title": "Creator: Review video readiness", "panel": "creator-video-readiness" }
+    ]
+  },
+  "t3Tools": []
 }
