@@ -1,5 +1,7 @@
 # Creator manifest v2 (T3CODE-75)
 
+This is the porting record for the original stdio plugin. The current hosted connection and permissions are documented in the [README](../README.md).
+
 `t3-plugin.json` follows the MCP-native plugin model approved on T3CODE-74 and first shipped by the Bob plugin (v0.2.1). T3 loads it into its server-owned MCP registry. It decodes against `McpPluginManifest` in `packages/contracts/src/mcpPlugin.ts`.
 
 ## Shape

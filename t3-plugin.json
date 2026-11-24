@@ -2,59 +2,23 @@
   "schemaVersion": 2,
   "id": "com.t3code.creator",
   "displayName": "Creator command center",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Creator OS ideas, production, publishing, analytics and sponsors for T3 Code, with human-approved publishing.",
   "mcpServer": {
     "name": "creator",
     "transport": {
-      "type": "stdio",
-      "command": "bun",
-      "args": [
-        "${pluginRoot}/src/mcp.ts"
-      ],
-      "env": [
-        {
-          "name": "CREATOR_COMMAND",
-          "value": "",
-          "title": "Creator operator command",
-          "description": "Command that runs the Creator operator CLI, e.g. pnpm --dir /path/to/creator trpc:ops. Split on spaces, no shell."
-        },
-        {
-          "name": "CREATOR_PUBLISH_COMMAND",
-          "value": "",
-          "title": "Creator publish command",
-          "description": "Command called with --project-id <id> --json to publish or schedule an approved video. Leave empty to disable publishing."
-        },
-        {
-          "name": "CREATOR_WORKSPACE",
-          "value": "",
-          "title": "Creator workspace"
-        },
-        {
-          "name": "GMACKO_API_URL",
-          "value": "",
-          "title": "Creator API endpoint",
-          "description": "Passed to the Creator commands; the CLI defaults to http://localhost:3000."
-        },
-        {
-          "name": "GMACKO_API_KEY",
-          "value": "",
-          "sensitive": true,
-          "title": "Creator API key",
-          "description": "Passed to the Creator commands for protected calls."
-        },
-        {
-          "name": "CREATOR_POLL_SECONDS",
-          "value": "60",
-          "title": "Refresh interval in seconds (15-3600)"
-        },
-        {
-          "name": "CREATOR_STATE_PATH",
-          "value": "",
-          "title": "Shared approval state file",
-          "description": "Optional absolute JSON path shared by every plugin copy. Defaults to $XDG_STATE_HOME/t3code-creator-plugin/state.json."
-        }
-      ]
+      "type": "http",
+      "url": "https://creator.gmac.io/mcp",
+      "headers": [],
+      "auth": {
+        "type": "oauth",
+        "scopes": [
+          "mcp:read",
+          "creator:approve",
+          "creator:publish",
+          "offline_access"
+        ]
+      }
     }
   },
   "contributes": {
