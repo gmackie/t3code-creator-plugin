@@ -2,11 +2,11 @@
 
 A T3 Code plugin for the Creator OS application (`gmackie/creator`). Creator keeps the domain state. The plugin shows ideas, production, publishing, analytics and sponsors in T3, and gates publishing behind an explicit human approval.
 
-The plugin is an MCP server (`src/mcp.ts`, stdio) described by a v2 manifest (`t3-plugin.json`). The v1 managed-app runtime and plugin RPC were removed in T3CODE-75, so T3 builds that only load v1 manifests can't load this version.
+Install the v2 manifest in T3 and sign in under **Settings → Tools → creator**. T3 connects to `https://creator.gmac.io/mcp`. Choose a workspace and grant `mcp:read` to open its nine panels. `offline_access` lets T3 renew the connection.
 
 ## MCP server
 
-The server is a stdio server on the official MCP TypeScript SDK v2. Its views are MCP Apps: `ui://creator/*.html` resources with the `text/html;profile=mcp-app` MIME type.
+Creator serves the `ui://creator/*.html` views as `text/html;profile=mcp-app`. During consent you can also select `creator:approve` to open a signed-in package confirmation and `creator:publish` to queue an approved package.
 
 | Tool | View / panel | Visibility |
 |---|---|---|
@@ -18,10 +18,12 @@ The server is a stdio server on the official MCP TypeScript SDK v2. Its views ar
 | `creator_sponsor_deal_room` | `creator-sponsors` (project): active deals and disclosure gates | model, app |
 | `creator_package_review` | `creator-package-review` and `creator-publish-checks` (thread): title, thumbnail, hook, captions, disclosure | model, app |
 | `creator_video_readiness` | `creator-video-readiness` (thread): the readiness workflow | model, app |
-| `creator_video_approve` | Approve button in the readiness view | app only |
-| `creator_video_publish` | Publish button; fails until a human approved. Destructive: a human-only action, as in v1 | app only |
+| `creator_video_approve` | Opens the signed-in package approval from the readiness view | app only |
+| `creator_video_publish` | Queues a human-approved package | app only |
 
-Each tool runs Creator's operator CLI (`video_creator_snapshot --workspace <id> [--projectId <id>] --json`). A missing, failing, slow (30 s) or non-JSON command becomes a short error result. The plugin never shows placeholder data.
+## Standalone stdio operator
+
+The standalone `bun run mcp` entry point runs Creator's operator CLI (`video_creator_snapshot --workspace <id> [--projectId <id>] --json`). A missing, failing, slow (30 s) or non-JSON command becomes a short error result. The plugin never shows placeholder data.
 
 ### Configuration
 
@@ -44,6 +46,6 @@ bun run typecheck
 bun run inspect                # MCP Inspector, against scripts/fake-creator.ts unless CREATOR_COMMAND is set
 ```
 
-Install this directory through T3's plugin installer after `bun install --frozen-lockfile`. Then set `CREATOR_COMMAND` (and optionally the publish command and API key) on the connected server. Web, desktop and mobile can all open the panels; mobile uses the server's installation.
+For the standalone operator, set `CREATOR_COMMAND` and any required API or publish configuration in the process environment.
 
 See `docs/manifest-v2.md` for the v1 → v2 mapping, the server rules, and the open questions.

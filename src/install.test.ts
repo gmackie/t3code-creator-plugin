@@ -7,12 +7,37 @@ import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import manifest from "../t3-plugin.json";
 import { FAKE_CREATOR } from "./testing.ts";
 
-it("launches the installed manifest from another directory and serves its panels", async () => {
+it("installs the hosted OAuth server and keeps the panel commands", () => {
+  expect(manifest.mcpServer).toEqual({
+    name: "creator",
+    transport: {
+      type: "http",
+      url: "https://creator.gmac.io/mcp",
+      headers: [],
+      auth: { type: "oauth", scopes: ["mcp:read", "creator:approve", "creator:publish", "offline_access"] },
+    },
+  });
+  expect(manifest.contributes.panels.map((panel) => panel.id)).toEqual([
+    "creator-command-center",
+    "creator-publish-checks",
+    "creator-publish-queue",
+    "creator-content-calendar",
+    "creator-analytics",
+    "creator-idea-ladder",
+    "creator-sponsors",
+    "creator-package-review",
+    "creator-video-readiness",
+  ]);
+  const panels = new Set(manifest.contributes.panels.map((panel) => panel.id));
+  for (const command of manifest.contributes.commands) expect(panels.has(command.panel)).toBe(true);
+});
+
+it("launches the standalone stdio operator from another directory and serves its panels", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "creator-install-"));
   const root = new URL("../", import.meta.url).pathname.replace(/\/$/, "");
   const transport = new StdioClientTransport({
-    command: manifest.mcpServer.transport.command,
-    args: manifest.mcpServer.transport.args.map((arg) => arg.replaceAll("${pluginRoot}", root)),
+    command: process.execPath,
+    args: [join(root, "src/mcp.ts")],
     cwd,
     env: { PATH: process.env.PATH ?? "", CREATOR_COMMAND: FAKE_CREATOR.join(" "), CREATOR_STATE_PATH: join(cwd, "state.json") },
   });
